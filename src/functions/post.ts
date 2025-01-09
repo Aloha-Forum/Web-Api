@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getParams } from "../utils/validate";
+import { getQuery } from "../utils/validate";
 import { Aloha } from "../shared/container";
 import { ResourceNotFoundError } from "../shared/error";
 
@@ -21,7 +21,7 @@ async function getPost(id: string): Promise<any> {
 
 async function post(request: HttpRequest): Promise<HttpResponseInit> {
     try {
-        const params = getParams(request.query, ['id']);
+        const params = getQuery(request.query, ['id']);
         switch (request.method) {
             case 'GET':
                 return { body: await getPost(params.id) };
