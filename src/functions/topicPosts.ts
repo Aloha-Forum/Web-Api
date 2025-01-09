@@ -11,7 +11,7 @@ async function topicPosts(request: HttpRequest): Promise<HttpResponseInit> {
         const limit = 10;
 
         const querySpec = {
-            query: 'SELECT c.postId, c.uid, c.title, LEFT(c.body, 50) as body, c.lastActivity \
+            query: 'SELECT c.postId, c.uid, c.title, LEFT(c.body, 50) as body, c.lastActivity, c.popularity \
                     FROM c \
                     WHERE c.topicId = @topicId \
                     ORDER BY c.postAt DESC \
