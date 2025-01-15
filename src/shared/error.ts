@@ -17,3 +17,13 @@ export class ResourceNotFoundError extends Error {
     statusCode = 404;
     message = 'Resource not found';
 }
+
+export class UndefinedError extends Error {
+    statusCode;
+    message = 'Undefined error';
+
+    constructor(statusCode: number) {
+        super()
+        this.statusCode = statusCode;
+    }
+}
