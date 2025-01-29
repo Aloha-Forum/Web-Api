@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
 import { Aloha } from "../shared/container";
 import { verifyToken } from "../utils/auth";
-import { RequestFormatError, ResourceNotFoundError } from "../shared/error";
+import { RequestFormatError, ResourceNotFoundError } from "../shared/ErrorResponse";
 import { getUidByEmail } from "../utils/user";
 
 async function isSessionExisted(token: String): Promise<boolean> {

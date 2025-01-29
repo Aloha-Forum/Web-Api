@@ -1,3 +1,9 @@
+import { Status } from './Status';
+
+export function ErrorResponse(status: Status, message: string = null) {
+    return { status, body: message };
+}
+
 export class RequestFormatError extends Error {
     statusCode = 400;
     message = 'Invalid request body or query paramters';

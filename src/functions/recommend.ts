@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
 import { Aloha } from "../shared/container";
 import { getParams } from "../utils/validate";
-import { ResourceNotFoundError } from "../shared/error";
+import { ResourceNotFoundError } from "../shared/ErrorResponse";
 
 async function recommnedPosts(request: HttpRequest): Promise<HttpResponseInit> {
     try {            

@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
-import { RequestFormatError } from "../shared/error";
+import { RequestFormatError } from "../shared/ErrorResponse";
 
 export function getParams(target: any, requiredParams: string[]): any {
     const result: any = {};

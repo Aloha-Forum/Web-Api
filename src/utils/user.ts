@@ -1,5 +1,16 @@
 import { Aloha } from "../shared/container";
-import { ResourceNotFoundError, UndefinedError } from "../shared/error";
+
+export async function getUidBySession(accessToken: string): Promise<String | null> {
+    const querySpec = {
+        query: 'SELECT uid FROM c WHERE c.sid = @sid',
+        parameters: [
+            { name: '@sid', value: accessToken }
+        ],
+    };
+    
+    const { resources: sessions } = await Aloha.Session.items.query(querySpec).fetchNext();
+    return sessions.length > 0 ? sessions[0].uid : null;
+}
 
 export async function getUidByEmail(email: string) {
     const querySpec = {

@@ -1,7 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getQuery } from "../utils/validate";
 import { Aloha } from "../shared/container";
-import { ResourceNotFoundError } from "../shared/error";
 
 async function getPost(id: string): Promise<any> {
 	const querySpec = {
@@ -25,6 +24,8 @@ async function post(request: HttpRequest): Promise<HttpResponseInit> {
         switch (request.method) {
             case 'GET':
                 return { body: await getPost(params.id) };
+            case 'POST':
+                return await publishPost(request)
         }
     }
     catch (error) {

@@ -6,8 +6,8 @@ const AlohaDB = cosmosClient.database('Aloha');
 export const Aloha = Object.freeze({
     User: AlohaDB.container('User'),
     Session: AlohaDB.container('Session'),
-    EmailVerification: AlohaDB.container('EmailVerification'),
     Topic: AlohaDB.container('Topic'),
     Post: AlohaDB.container('Post'),
-    Comment: AlohaDB.container('Comment')
+    Comment: AlohaDB.container('Comment'),
+    Vote: AlohaDB.container('Vote')
 });

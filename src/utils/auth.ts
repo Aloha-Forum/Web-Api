@@ -1,4 +1,4 @@
-import { UndefinedError } from "../shared/error";
+import { UndefinedError } from "../shared/ErrorResponse";
 
 // the application supports Google OAuth only
 export async function verifyToken(token: string): Promise<any> {
