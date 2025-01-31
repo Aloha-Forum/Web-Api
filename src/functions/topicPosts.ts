@@ -1,39 +1,21 @@
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
-import { Aloha } from "../shared/container";
-import { getParams } from "../utils/validate";
-import { ResourceNotFoundError } from "../shared/ErrorResponse";
-import { getCommentCount } from "../shared/comment";
+import { getPostList } from "../stored/post";
+import { ErrorResponse } from "../shared/ErrorResponse";
+import { Status } from "../shared/Status";
+import { getCommentCount } from "../stored/comment";
 
 async function topicPosts(request: HttpRequest): Promise<HttpResponseInit> {
     try {
-        const { topicId } = getParams(request.params, ['topicId']);
+        const topicId = request.params.topicId;
+        if (!topicId) return ErrorResponse(Status.BAD_REQUEST);
             
         const page = parseInt(request.query.get('page')) || 0;
-        const limit = 10;
+        const items = await getPostList(topicId, page);
 
-        const querySpec = {
-            query: 'SELECT c.postId, c.uid, c.title, LEFT(c.body, 50) as body, c.lastActivity, c.popularity \
-                    FROM c \
-                    WHERE c.topicId = @topicId \
-                    ORDER BY c.postAt DESC \
-                    OFFSET @offset \
-                    LIMIT @limit',
-            parameters: [
-                { name: '@topicId', value: topicId },
-                { name: '@offset', value: page*limit },
-                { name: '@limit', value: limit }
-            ],
-        };
-        const { resources: items } = await Aloha.Post.items.query(querySpec).fetchAll();
-
-        for (let item of items) {
+        for (let item of items)
             item.commentCount = await getCommentCount(item.postId);
-        }
 
-        if (items.length) 
-            return { body: JSON.stringify(items) }
-        else
-            throw new ResourceNotFoundError();
+        return { body: JSON.stringify(items) }
     }
     catch (error) {
         return { status: error.statusCode || 500, body: error.message };

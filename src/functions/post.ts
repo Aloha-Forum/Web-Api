@@ -1,13 +1,13 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getQuery } from "../utils/validate";
+import { app, HttpRequest, HttpResponseInit, } from "@azure/functions";
 import { Aloha } from "../shared/container";
-import { AuthenticationError, ErrorResponse, RequestFormatError, ResourceNotFoundError } from "../shared/ErrorResponse";
+import { ErrorResponse } from "../shared/ErrorResponse";
 import { ulid } from 'ulid';
 import { getUidBySession } from "../utils/user";
 import { Status } from "../shared/Status";
-import { getCommentCount } from "../shared/comment";
-import { get } from "http";
-import { getVoteCount, Vote } from "./vote";
+import { Vote } from "./vote";
+import { getUserVote, getVoteCount } from "../stored/vote";
+import { getPostById } from "../stored/post";
+import { getCommentCount } from "../stored/comment";
 
 type PublishPostRequest = { title: string; content: string; topicId: string; }
 
@@ -62,12 +62,7 @@ async function getPost(req: HttpRequest): Promise<HttpResponseInit> {
     const id = req.query.get('id');
     if (!id) return ErrorResponse(Status.BAD_REQUEST);
 
-    const query = `SELECT c.topicId, c.postAt, c.uid, c.title, c.body, c.likeCount, c.dislikeCount \
-                   FROM c \
-                   WHERE c.postId = @postId`;
-    const parameters = [{ name: '@postId', value: id }];
-
-	const { resources: [item] } = await Aloha.Post.items.query({ query, parameters }).fetchAll();
+    const item = await getPostById(id);
 	if (!item) return ErrorResponse(Status.NOT_FOUND);
 
     item.commentCount = await getCommentCount(id);
@@ -75,32 +70,16 @@ async function getPost(req: HttpRequest): Promise<HttpResponseInit> {
     item.dislikeCount = await getVoteCount(id, Vote.DISLIKE);
 
     const accessToken = req.headers.get('authorization');
-    console.log(accessToken)
     if (accessToken != null) {
         const uid = await getUidBySession(accessToken);
-        console.log(uid)
 
         if (uid != null) {
-            const voteQuery = `SELECT c.vote \
-                               FROM c \
-                               WHERE c.targetId = @targetId AND c.uid = @uid`;
-            const voteParameters = [
-                { name: '@targetId', value: id },
-                { name: '@uid', value: uid }
-            ];
-
-
-
-            const { resources: votes } = 
-                await Aloha.Vote.items.query({ query: voteQuery, parameters: voteParameters }).fetchAll();
-
-            console.log(votes.length, votes[0].vote)
-            item.vote = votes.length > 0 ? votes[0].vote : Vote.CANCEL;
+            item.vote = await getUserVote(id, uid as string);
 
             if (item.vote == Vote.LIKE)
-                item.likeCount -= 1;
+                item.likeCount--;
             else if (item.vote == Vote.DISLIKE)
-                item.dislikeCount -= 1;
+                item.dislikeCount--;
         }
     }
     else {

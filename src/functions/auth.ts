@@ -1,32 +1,20 @@
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
 import { Aloha } from "../shared/container";
 import { verifyToken } from "../utils/auth";
-import { RequestFormatError, ResourceNotFoundError } from "../shared/ErrorResponse";
 import { getUidByEmail } from "../utils/user";
-
-async function isSessionExisted(token: String): Promise<boolean> {
-
-    const querySpec = {
-        query: 'SELECT VALUE COUNT(1) \
-                FROM c \
-                WHERE c.sid = @token',
-        parameters: [
-            { name: '@token', value: token }
-        ],
-    };
-
-    const { resources: [count] } = await Aloha.Session.items.query(querySpec).fetchAll();
-    return count > 0
-}
+import { ErrorResponse } from "../shared/ErrorResponse";
+import { Status } from "../shared/Status";
+import { isSessionExisted } from "../stored/auth";
 
 async function login(request: HttpRequest): Promise<HttpResponseInit> {
     try {
         const accessToken = request.headers.get('authorization');
-        if (accessToken == null) throw new RequestFormatError()
+        if (!accessToken) return ErrorResponse(Status.BAD_REQUEST)
         
         const respsonse = await verifyToken(accessToken);
+
         const user = await getUidByEmail(respsonse.email);
-        if (user == null) throw new ResourceNotFoundError()
+        if (!user) return ErrorResponse(Status.BAD_REQUEST)
     
         if (!await isSessionExisted(accessToken)) {
             const session = { uid: user.uid, sid: accessToken, ttl: respsonse.expiresIn}
@@ -43,10 +31,10 @@ async function login(request: HttpRequest): Promise<HttpResponseInit> {
 async function signup(request: HttpRequest): Promise<any> {
     try {
         const accessToken = request.headers.get('authorization');
-        if (accessToken == null) throw new RequestFormatError()
+        if (!accessToken) return ErrorResponse(Status.BAD_REQUEST)
         
         const uid = request.query.get('uid');
-        if (uid == null) throw new RequestFormatError()
+        if (!uid) return ErrorResponse(Status.BAD_REQUEST)
         
         const respsonse = await verifyToken(accessToken);
     

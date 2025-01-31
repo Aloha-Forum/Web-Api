@@ -4,6 +4,7 @@ import { ErrorResponse } from "../shared/ErrorResponse";
 import { Status } from "../shared/Status";
 import { ulid } from "ulid";
 import { getUidBySession } from "../utils/user";
+import { getComment } from "../stored/comment";
 
 type CommentRequest = {
     postId: string;
@@ -46,19 +47,6 @@ async function publishComment(request: HttpRequest): Promise<HttpResponseInit> {
     return { status: Status.CREATED, body: bodyRes };
 }
 
-async function getComment(req: HttpRequest): Promise<HttpResponseInit> {
-    const query = `SELECT * \
-                   FROM c \
-                   WHERE c.postId = @postId \
-                   ORDER BY c.commentId`;
-    const parameters = [
-        { name: '@postId', value: req.params.postId },
-    ]
-
-    const { resources: items } = await Aloha.Comment.items.query({query, parameters}).fetchAll();
-    return { body: JSON.stringify(items) };
-}
-
 async function commentHandler(request: HttpRequest): Promise<HttpResponseInit> {
     try {
         const postId = request.params.postId;
@@ -66,7 +54,7 @@ async function commentHandler(request: HttpRequest): Promise<HttpResponseInit> {
 
         switch (request.method) {
             case 'GET':
-                return await getComment(request);
+                return await getComment(postId);
             case 'POST':
                 return await publishComment(request)
         }

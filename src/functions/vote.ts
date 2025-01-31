@@ -3,75 +3,23 @@ import { ErrorResponse } from "../shared/ErrorResponse";
 import { getUidBySession } from "../utils/user";
 import { Aloha } from "../shared/container";
 import { Status } from "../shared/Status";
+import { getVoteId } from "../stored/vote";
 
 export enum Vote { CANCEL = -1, DISLIKE = 0, LIKE = 1}
 
 type PostVoteRequest = { vote: Vote; targetId: string; }
 type GetVoteRequest = { targetId: string}
 
-export async function getVoteCount(targetId: string, type: Vote) {
-    const query = `SELECT * \
-                   FROM c \
-                   where c.targetId = @targetId AND c.vote = @type`;
-    const parameters = [
-        { name: '@targetId', value: targetId },
-        { name: '@type', value: type }
-    ];
-
-    const { resources: items } = await Aloha.Vote.items.query({ query, parameters }).fetchAll();
-    return items.length;
-}
-
-
 async function cancelVote(uid: string, targetId: string) {
-    const query = `SELECT id \
-                   FROM c \
-                   WHERE c.uid = @uid AND c.targetId = @targetId`;
-
-    const parameters = [
-        { name: '@uid', value: uid },
-        { name: '@targetId', value: targetId }
-    ];
+    const id = await getVoteId(targetId, uid);
     
-    const { resources: items } = await Aloha.Vote.items.query({ query, parameters }).fetchAll();
-    if (items.length === 0) 
-        return ErrorResponse(Status.NOT_FOUND, "Vote not found");
-
-    await Aloha.Vote.item(items[0].id, targetId).delete();
+    if (id != null)
+        await Aloha.Vote.item(id, targetId).delete();
 }
 
 async function addVote(uid: string, targetId: string, vote: Vote) {
-    const query = `SELECT c.id 
-                   FROM c 
-                   WHERE c.uid = @uid AND c.targetId = @targetId`;
-    const parameters = [
-        { name: '@uid', value: uid },
-        { name: '@targetId', value: targetId }
-    ];
-
-    const { resources: items } = await Aloha.Vote.items.query({ query, parameters }).fetchAll();
-    if (items.length > 0) {
-        try {
-            await Aloha.Vote.item(items[0].id, targetId).delete();
-        }
-        catch (error) {
-            console.log(error)
-        }
-    }
+    cancelVote(uid, targetId);
     await Aloha.Vote.items.create({ uid, targetId, vote });
-}
-
-async function getUserVote(targetId: string, uid: string) {
-    const query = `SELECT c.vote \
-                   FROM c \
-                   WHERE c.targetId = @targetId AND c.uid = @uid`;
-    const parameters = [
-        { name: '@targetId', value: targetId },
-        { name: '@uid', value: uid }
-    ];
-
-    const { resources: items } = await Aloha.Vote.items.query({ query, parameters }).fetchAll();
-    return items.length > 0 ? items[0].vote : Vote.CANCEL;
 }
 
 async function voteHandler(req: HttpRequest): Promise<HttpResponseInit> {
@@ -80,7 +28,7 @@ async function voteHandler(req: HttpRequest): Promise<HttpResponseInit> {
         if (!accessToken) return ErrorResponse(Status.BAD_REQUEST);
 
         const uid = getUidBySession(accessToken);
-        if (uid == null) return ErrorResponse(Status.UNAUTHORIZED);
+        if (!uid) return ErrorResponse(Status.UNAUTHORIZED);
 
         switch (req.method) {
             case 'GET': {
@@ -98,8 +46,7 @@ async function voteHandler(req: HttpRequest): Promise<HttpResponseInit> {
                     return ErrorResponse(Status.BAD_REQUEST, "Invalid like value");
         
                 const uid = await getUidBySession(accessToken);
-                if (uid == null) 
-                    return ErrorResponse(Status.UNAUTHORIZED);
+                if (!uid) return ErrorResponse(Status.UNAUTHORIZED);
                 
                 switch (body.vote) {
                     case Vote.LIKE:

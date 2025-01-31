@@ -1,4 +1,4 @@
-import { UndefinedError } from "../shared/ErrorResponse";
+import { ErrorResponse } from "../shared/ErrorResponse";
 
 // the application supports Google OAuth only
 export async function verifyToken(token: string): Promise<any> {
@@ -9,7 +9,7 @@ export async function verifyToken(token: string): Promise<any> {
 
     // unsuccessful to verify access token
     if (!response.ok) 
-        throw new UndefinedError(response.status);
+        throw ErrorResponse(response.status);
     
     return await response.json();
 }

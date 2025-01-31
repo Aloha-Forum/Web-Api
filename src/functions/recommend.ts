@@ -1,35 +1,18 @@
 import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
-import { Aloha } from "../shared/container";
-import { getParams } from "../utils/validate";
-import { ResourceNotFoundError } from "../shared/ErrorResponse";
-import { getCommentCount } from "../shared/comment";
+import { getRecommendPost } from "../stored/post";
+import { getCommentCount } from "../stored/comment";
 
 async function recommnedPosts(request: HttpRequest): Promise<HttpResponseInit> {
     try {            
         const page = parseInt(request.query.get('page')) || 0;
         const limit = 10;
 
-        const querySpec = {
-            query: 'SELECT c.postId, c.uid, c.title, LEFT(c.body, 50) as body, c.lastActivity, c.popularity \
-                    FROM c \
-                    ORDER BY c.popularity.viewCount, c.popularity.commentCount, c.postAt DESC \
-                    OFFSET @offset \
-                    LIMIT @limit',
-            parameters: [
-                { name: '@offset', value: page*limit },
-                { name: '@limit', value: limit }
-            ],
-        };
-        const { resources: items } = await Aloha.Post.items.query(querySpec).fetchAll();
+        const items = await getRecommendPost(page, limit);
 
-        for (let item of items) {
+        for (let item of items)
             item.commentCount = await getCommentCount(item.postId);
-        }
 
-        if (items.length) 
-            return { body: JSON.stringify(items) }
-        else
-            throw new ResourceNotFoundError();
+        return { body: JSON.stringify(items) }
     }
     catch (error) {
         return { status: error.statusCode || 500, body: error.message };
