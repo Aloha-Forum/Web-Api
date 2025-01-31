@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
 import { Aloha } from "../shared/container";
 import { getParams } from "../utils/validate";
 import { ResourceNotFoundError } from "../shared/ErrorResponse";
+import { getCommentCount } from "../shared/comment";
 
 async function topicPosts(request: HttpRequest): Promise<HttpResponseInit> {
     try {
@@ -24,6 +25,10 @@ async function topicPosts(request: HttpRequest): Promise<HttpResponseInit> {
             ],
         };
         const { resources: items } = await Aloha.Post.items.query(querySpec).fetchAll();
+
+        for (let item of items) {
+            item.commentCount = await getCommentCount(item.postId);
+        }
 
         if (items.length) 
             return { body: JSON.stringify(items) }

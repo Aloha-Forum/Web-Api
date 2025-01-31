@@ -2,7 +2,7 @@ import { Aloha } from "../shared/container";
 
 export async function getUidBySession(accessToken: string): Promise<String | null> {
     const querySpec = {
-        query: 'SELECT uid FROM c WHERE c.sid = @sid',
+        query: 'SELECT c.uid FROM c WHERE c.sid = @sid',
         parameters: [
             { name: '@sid', value: accessToken }
         ],

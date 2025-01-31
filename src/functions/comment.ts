@@ -12,11 +12,11 @@ type CommentRequest = {
 
 function createCommnetModel(uid: string, postId: string, content: string) {
     return {
-        id: ulid(),
+        commentId: ulid(),
         uid: uid,
-        body: content,
+        content: content, 
         postId: postId,
-        postAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         popularity: { viewCount: 0, commentCount: 0 }
     };
 }
@@ -40,27 +40,22 @@ async function publishComment(request: HttpRequest): Promise<HttpResponseInit> {
 
     // format the comment model and insert it into the database
     const comment = createCommnetModel(uid as string, body.postId, body.content)
-    await Aloha.Post.items.create(comment);
+    await Aloha.Comment.items.create(comment);
 
-    const bodyRes = JSON.stringify({ postId: comment.id, postAt: comment.postAt });
+    const bodyRes = JSON.stringify(comment);
     return { status: Status.CREATED, body: bodyRes };
 }
 
 async function getComment(req: HttpRequest): Promise<HttpResponseInit> {
-    const page = parseInt(req.query.get('page')) || 0;
-    
     const query = `SELECT * \
                    FROM c \
                    WHERE c.postId = @postId \
-                   ORDER BY c.commentId DESC \
-                   OFFSET @offset \
-                   LIMIT 10`;
+                   ORDER BY c.commentId`;
     const parameters = [
         { name: '@postId', value: req.params.postId },
-        { name: '@offset', value: page * 10 },
     ]
 
-    const { resources: items } = await Aloha.Topic.items.query({query, parameters}).fetchAll();
+    const { resources: items } = await Aloha.Comment.items.query({query, parameters}).fetchAll();
     return { body: JSON.stringify(items) };
 }
 
@@ -84,6 +79,6 @@ async function commentHandler(request: HttpRequest): Promise<HttpResponseInit> {
 
 app.http('comment', {
     methods: ['GET', 'POST'],
-    route: 'api/c/{targetId}',
+    route: 'api/comment',
     handler: commentHandler
 });
