@@ -14,7 +14,7 @@ async function login(request: HttpRequest): Promise<HttpResponseInit> {
         const respsonse = await verifyToken(accessToken);
 
         const user = await getUidByEmail(respsonse.email);
-        if (!user) return ErrorResponse(Status.BAD_REQUEST)
+        if (!user) return ErrorResponse(Status.NOT_FOUND)
     
         if (!await isSessionExisted(accessToken)) {
             const session = { uid: user.uid, sid: accessToken, ttl: respsonse.expiresIn}
